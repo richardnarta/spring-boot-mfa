@@ -11,12 +11,12 @@ class ExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationError(e: MethodArgumentNotValidException): ResponseEntity<BaseResponse<List<String>>> {
         val errors = e.bindingResult.allErrors.map { error ->
-            error.defaultMessage ?: "Invalid value"
+            error.defaultMessage ?: "invalid value"
         }
 
         val errorResponse = BaseResponse(
             error = true,
-            message = "Validation failed. Please check the errors.",
+            message = "Validation failed, please check the errors.",
             data = errors
         )
 
@@ -30,5 +30,14 @@ class ExceptionHandler {
             message = e.message
         )
         return ResponseEntity(errorResponse, e.status)
+    }
+
+    @ExceptionHandler(Exception::class)
+    fun handleGenericException(e: Exception): ResponseEntity<BaseResponse<Unit>> {
+        val errorResponse = BaseResponse<Unit>(
+            error = true,
+            message = "An unexpected server error occurred."
+        )
+        return ResponseEntity.internalServerError().body(errorResponse)
     }
 }
