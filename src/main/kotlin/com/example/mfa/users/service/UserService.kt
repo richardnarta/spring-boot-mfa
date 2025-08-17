@@ -1,5 +1,6 @@
 package com.example.mfa.users.service
 
+import com.example.mfa.core.security.HashEncoder
 import com.example.mfa.exception.AlreadyExistsException
 import com.example.mfa.users.model.database.UserDto
 import com.example.mfa.users.model.request.NewUserPayload
@@ -7,13 +8,12 @@ import com.example.mfa.users.model.toRole
 import com.example.mfa.users.repository.mongodb.UserRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
 @Service
 class UserService(
     private val userRepository: UserRepository,
-    private val passwordEncoder: PasswordEncoder
+    private val passwordEncoder: HashEncoder
 ) {
     fun getUsers(pageable: Pageable): Page<UserDto> {
         return userRepository.findAll(pageable)
