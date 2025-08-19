@@ -8,7 +8,7 @@ fun UserDto.toUser(): User {
     return User(
         id = id.toString(),
         name = name,
-        role = role.getRole(),
+        role = role.name,
         email = email.toString(),
         username = username.toString(),
         createdAt = createdAt.toString(),
@@ -16,16 +16,9 @@ fun UserDto.toUser(): User {
     )
 }
 
-fun Role.getRole(): String {
-    return when (this) {
-        Role.ADMIN -> "admin"
-        Role.USER -> "user"
-    }
-}
-
 fun String?.toRole(): Role {
     return when (this) {
-        "admin" -> Role.ADMIN
+        "ADMIN" -> Role.ADMIN
         else -> Role.USER
     }
 }

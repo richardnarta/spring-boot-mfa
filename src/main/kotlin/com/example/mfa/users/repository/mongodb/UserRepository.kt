@@ -9,4 +9,6 @@ import java.util.UUID
 interface UserRepository : MongoRepository<UserDto, UUID> {
     fun existsByEmail(email: String): Boolean
     fun existsByUsername(username: String): Boolean
+    fun findByEmail(email: String): UserDto?
+    fun findByUsername(username: String): UserDto?
 }

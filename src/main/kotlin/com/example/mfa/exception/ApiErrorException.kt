@@ -22,3 +22,8 @@ class NotFoundException(message: String) :
 class AlreadyExistsException(message: String) :
     ApiErrorException(HttpStatus.CONFLICT, message)
 
+class TooManyRequestException(message: String) :
+    ApiErrorException(HttpStatus.TOO_MANY_REQUESTS, message)
+
+class InternalServerErrorException(message: String = "An unknown error occurred") :
+    ApiErrorException(HttpStatus.INTERNAL_SERVER_ERROR, message)

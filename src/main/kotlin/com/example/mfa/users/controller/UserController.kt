@@ -6,18 +6,22 @@ import com.example.mfa.users.model.request.NewUserPayload
 import com.example.mfa.users.model.response.User
 import com.example.mfa.users.model.toUser
 import com.example.mfa.users.service.UserService
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@Tag(name = "Users", description = "Endpoints for managing users")
+@Tag(name = "Users")
 @RequestMapping("/users")
 class UserController(
     private val userService: UserService
 ) {
     @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    @SecurityRequirement(name = "bearerAuth")
     fun getUsers(
         @RequestParam(value = "page", defaultValue = "0") page: Int,
         @RequestParam(value = "limit", defaultValue = "10") limit: Int,
@@ -42,6 +46,8 @@ class UserController(
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @SecurityRequirement(name = "bearerAuth")
     fun postUser(
         @Valid @RequestBody body: NewUserPayload
     ): BaseResponse<User> {
