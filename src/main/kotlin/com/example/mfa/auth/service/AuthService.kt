@@ -14,6 +14,7 @@ import com.example.mfa.core.redis.RedisAuthRepository
 import com.example.mfa.core.security.HashEncoder
 import com.example.mfa.core.security.JwtService
 import com.example.mfa.exception.*
+import com.example.mfa.users.model.database.MfaStatus
 import com.example.mfa.users.model.database.UserDto
 import com.example.mfa.users.model.toUser
 import com.example.mfa.users.service.SharedUserService
@@ -28,12 +29,14 @@ class AuthService(
     private val userService: SharedUserService,
     private val geoLocationService: GeoLocationService
 ) {
-    fun login(payload: LoginPayload, requestInfo: RequestInfo): LoginData {
+    fun login(payload: LoginPayload, requestInfo: RequestInfo): LoginData? {
         val user = verifyUserIdentity(
             payload.email,
             payload.username,
             payload.password
         )
+
+        if (user.mfaStatus == MfaStatus.ENABLED) return null
 
         if (authRedisRepository.sCard("sessions-user:${user.id}") >= 5) throw
             TooManyRequestException("Session limit exceeded. Please log out from another device.")
@@ -54,9 +57,8 @@ class AuthService(
         val refreshTokenPayload = jwtService.getPayloadFromToken(refreshToken) ?: throw
             UnauthorizedException("Invalid refresh token.")
 
-        val user = userService.getUserById(refreshTokenPayload.userId).orElseThrow {
+        val user = userService.getUserById(refreshTokenPayload.userId).orElse(null) ?: throw
             NotFoundException("User with ID ${refreshTokenPayload.userId} is not found.")
-        } ?: throw NotFoundException("User with ID ${refreshTokenPayload.userId} is not found.")
 
         revokeRefreshToken(user, refreshTokenPayload)
 
@@ -76,9 +78,8 @@ class AuthService(
         val refreshTokenPayload = jwtService.getPayloadFromToken(refreshToken) ?: throw
             UnauthorizedException("Invalid refresh token.")
 
-        val user = userService.getUserById(refreshTokenPayload.userId).orElseThrow {
-            NotFoundException("User with ID ${refreshTokenPayload.userId} is not found.")
-        } ?: throw NotFoundException("User with ID ${refreshTokenPayload.userId} is not found.")
+        val user = userService.getUserById(refreshTokenPayload.userId).orElse(null) ?: throw
+            NotFoundException("User with ID ${accessTokenPayload.userId} is not found.")
 
         if (refreshTokenPayload.userId != accessTokenPayload.userId) {
             throw ForbiddenException("Token's ownership does not match.")
@@ -109,7 +110,17 @@ class AuthService(
         }
     }
 
-    fun verifyUserIdentity(email: String?, username: String?, password: String?): UserDto {
+    fun createVerificationToken(payload: LoginPayload): String {
+        val user = verifyUserIdentity(
+            payload.email,
+            payload.username,
+            payload.password
+        )
+
+        return jwtService.generateVerificationToken(user.id.toString(), user.role)
+    }
+
+    private fun verifyUserIdentity(email: String?, username: String?, password: String?): UserDto {
         val user = if (!email.isNullOrEmpty()) {
             userService.getUserByEmail(email) ?: throw NotFoundException(
                 "Email $email not found."
@@ -141,7 +152,7 @@ class AuthService(
         val newRefreshToken = jwtService.generateRefreshToken(user.id.toString(), user.role)
 
         val refreshTokenPayload = jwtService.getPayloadFromToken(newRefreshToken) ?: throw
-        InternalServerErrorException()
+            InternalServerErrorException()
 
         authRedisRepository.sAdd(
             "sessions-user:${user.id}",
@@ -164,7 +175,7 @@ class AuthService(
         )
     }
 
-    fun revokeRefreshToken(user: UserDto, refreshTokenPayload: TokenPayload) {
+    private fun revokeRefreshToken(user: UserDto, refreshTokenPayload: TokenPayload) {
         authRedisRepository.sRem("sessions-user:${user.id}", refreshTokenPayload.jti)
         authRedisRepository.del("session:${refreshTokenPayload.jti}")
     }

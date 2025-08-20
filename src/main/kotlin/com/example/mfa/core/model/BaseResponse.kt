@@ -2,7 +2,7 @@ package com.example.mfa.core.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class BaseResponse<T>(
+open class BaseResponse<T>(
     val error: Boolean = false,
     val message: String? = "success",
     val data: T? = null

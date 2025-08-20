@@ -20,12 +20,26 @@ data class UserDto(
 
     val name: String,
     val role: Role = Role.USER,
+
+    val mfaStatus: MfaStatus = MfaStatus.DISABLED,
+    val mfaDetail: MfaDetail? = null,
+
     val createdAt: Instant? = Instant.now(),
     val updatedAt: Instant? = null,
     val deletedAt: Instant? = null,
 )
 
+data class MfaDetail(
+    val encryptedSecret: String?,
+    val backupCodes: Set<String> = setOf()
+)
+
 enum class Role {
     ADMIN,
     USER
+}
+
+enum class MfaStatus {
+    DISABLED,
+    ENABLED
 }

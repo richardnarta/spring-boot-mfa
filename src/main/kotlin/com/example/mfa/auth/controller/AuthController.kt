@@ -4,23 +4,21 @@ import com.example.mfa.auth.model.request.LoginPayload
 import com.example.mfa.auth.model.request.LogoutAllPayload
 import com.example.mfa.auth.model.request.LogoutPayload
 import com.example.mfa.auth.model.request.RefreshPayload
-import com.example.mfa.auth.model.response.LoginResponse
-import com.example.mfa.auth.model.response.RefreshResponse
+import com.example.mfa.auth.model.response.*
 import com.example.mfa.auth.service.AuthService
 import com.example.mfa.core.model.BaseResponse
 import com.example.mfa.core.model.TokenPayload
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.ResponseStatus
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @Tag(name = "Authentication")
@@ -34,20 +32,35 @@ class AuthController(
         description = "Authenticates a user and returns access and refresh tokens. " +
                 "Login can be performed with either a username OR an email, but not both.",
     )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Login successful. The response body will vary based on the user's MFA status.",
+        content = [Content(
+            schema = Schema(oneOf = [BaseLoginResponse::class, BaseLoginOtpResponse::class])
+        )]
+    )
     @ResponseStatus(HttpStatus.OK)
     fun login(
         @Valid @RequestBody payload: LoginPayload,
         request: HttpServletRequest
-    ): BaseResponse<LoginResponse> {
+    ): BaseResponse<*> {
         val requestInfo = authService.getRequestInfo(request)
         val loginData = authService.login(payload, requestInfo)
-        return BaseResponse(
-            data = LoginResponse(
-                accessToken = loginData.accessToken,
-                refreshToken = loginData.refreshToken,
-                user = loginData.user
+        return if (loginData != null) {
+            BaseResponse(
+                data = LoginResponse(
+                    accessToken = loginData.accessToken,
+                    refreshToken = loginData.refreshToken,
+                    user = loginData.user
+                )
             )
-        )
+        } else {
+            BaseResponse(
+                data = OtpRequestResponse(
+                    verificationToken = authService.createVerificationToken(payload)
+                )
+            )
+        }
     }
 
     @PostMapping("/refresh")

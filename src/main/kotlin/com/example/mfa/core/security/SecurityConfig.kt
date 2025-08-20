@@ -24,6 +24,8 @@ class SecurityConfig(
                     .requestMatchers(
                         "/auth/login",
                         "/auth/refresh",
+                        "/auth/mfa/totp/verification",
+                        "auth/mfa/backup-code/verification",
                         "/docs/**",
                         "/swagger-ui/**",
                         "/v3/api-docs/**"

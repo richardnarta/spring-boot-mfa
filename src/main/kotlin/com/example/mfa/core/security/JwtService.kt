@@ -60,6 +60,10 @@ class JwtService(
         return generateToken(userId, role, "refresh", refreshTokenValidityMs)
     }
 
+    fun generateVerificationToken(userId: String, role: Role): String {
+        return generateToken(userId, role, "verification", 5L * 60L * 1000L)
+    }
+
     fun validateAccessToken(token: String): Boolean {
         val claims = parseAllClaims(token)
         val tokenType = claims?.get("type") as? String ?: return false
@@ -75,6 +79,14 @@ class JwtService(
             ) ?: return false
             val tokenType = claims?.get("type") as? String ?: return false
             tokenType == "refresh"
+        } catch (_: Exception) { false }
+    }
+
+    fun validateVerificationToken(token: String): Boolean {
+        return try {
+            val claims = parseAllClaims(token)
+            val tokenType = claims?.get("type") as? String ?: return false
+            tokenType == "verification"
         } catch (_: Exception) { false }
     }
 
